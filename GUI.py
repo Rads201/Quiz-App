@@ -1,8 +1,11 @@
 import PySimpleGUI as sg
 import time
+import zmq
+import random
+import json
 
-start_layout = [[sg.Text('Press Button to Start the Quiz', font=("Comic Sans MS", 20))],
-                [sg.Button('Start', font=("Comic Sans MS", 20))]]
+start_layout = [[sg.Text('Press a Button to Start the Quiz', font=("Comic Sans MS", 20))],
+                [sg.Button('Quiz 1', font=("Comic Sans MS", 20)), sg.Button('Math Quiz', font=("Comic Sans MS", 20))]]
 
 start_layout1 = [[sg.VPush()],
                  [sg.Push(), sg.Column(start_layout, element_justification='c'), sg.Push()],
@@ -16,7 +19,111 @@ while True:
     if start_event == sg.WINDOW_CLOSED:
         break
 
-    if start_event == 'Start':
+    # Math Quiz Option
+    if start_event == 'Math Quiz':
+        force_continue = False
+        context = zmq.Context()
+        socket = context.socket(zmq.REQ)
+        socket.connect("tcp://localhost:5555")
+
+        random_num = random.randint(0, 2)
+        categories = ["addition", "subtraction", "multiplication"]
+        socket.send_string(categories[random_num])
+        received = json.loads(socket.recv_json())
+
+        problems = []
+        correct_answers = []
+
+        for problem in received:
+            problems.append(problem)
+            correct_answers.append(str(received[problem]))
+
+        count = 0
+        responses = [None for x in range(len(problems))]
+
+        math_layout = [[sg.Push(), sg.Text(problems[count], font=("Comic Sans MS", 20), key='text'), sg.Push()],
+                       [sg.Text('Answer:', font=("Comic Sans MS", 20)), sg.InputText(do_not_clear=False)]]
+
+        layout_math = [[sg.VPush()],
+                       [sg.Push(), sg.Column(math_layout), sg.Push()],
+                       [sg.VPush()],
+                       [sg.Button('Back', font=("Comic Sans MS", 20), key='Back'), sg.Push(),
+                        sg.Button('Next', font=("Comic Sans MS", 20), key='Next')]]
+
+        # Quiz Screen ------------------------------------------------------------------------------
+        window_math = sg.Window('Quiz App', layout_math, size=(750, 450), resizable=True)
+
+        while len(problems) > count >= 0:
+
+            quiz_event, quiz_values = window_math.read()
+            if quiz_event == sg.WINDOW_CLOSED:
+                window_math.close()
+                break
+
+            responses[count] = quiz_values[0]
+
+            if quiz_event == 'Next' and count < len(problems) - 1:
+                count += 1
+                window_math['text'].update(problems[count])
+
+            elif quiz_event == 'Back' and count > 0:
+                count -= 1
+                window_math['text'].update(problems[count])
+
+            elif quiz_event == 'Next' and (None in responses or "" in responses):
+
+                confirm_layout = [[sg.Text('You have not answered all the questions.', font=("Comic Sans MS", 16))],
+                                  [sg.Text('Do you still want to submit the quiz?', font=("Comic Sans MS", 16))],
+                                  [sg.Button('Yes', font=("Comic Sans MS", 16)),
+                                   sg.Button('No', font=("Comic Sans MS", 16))]]
+
+                confirm_layout1 = [[sg.VPush()],
+                                   [sg.Push(), sg.Column(confirm_layout, element_justification='c'), sg.Push()],
+                                   [sg.VPush()]]
+
+                # Confirmation Screen ----------------------------------------------------------------------------
+                confirm_window = sg.Window('Confirmation', confirm_layout1, size=(750, 450))
+
+                while True:
+                    confirm_event, confirm_values = confirm_window.read()
+
+                    if confirm_event == 'Yes':
+                        confirm_window.close()
+                        force_continue = True
+                        break
+                    elif confirm_event == 'No' or confirm_event == sg.WINDOW_CLOSED:
+                        confirm_window.close()
+                        break
+
+            if (quiz_event == 'Next' and None not in responses and "" not in responses) or force_continue:
+                time.sleep(1.0)
+
+                correct = 0
+                num_of_prob = len(correct_answers)
+
+                for answer in range(num_of_prob):
+                    if correct_answers[answer] == responses[answer]:
+                        correct += 1
+
+                end_layout = [[sg.Text('You got ' + str(correct) + '/' + str(num_of_prob) + ' questions right!',
+                                       font=("Comic Sans MS", 20))]]
+
+                end_layout1 = [[sg.VPush()],
+                               [sg.Push(), sg.Column(end_layout, element_justification='c'), sg.Push()],
+                               [sg.VPush()],
+                               [sg.Button('Home', font=("Comic Sans MS", 20))]]
+
+                # End Screen ----------------------------------------------------------------------------
+                end_window = sg.Window('End Screen', end_layout1, size=(750, 450), resizable=True)
+
+                end_event, end_values = end_window.read()
+                window_math.close()
+
+                if end_event == 'Home' or end_event == sg.WINDOW_CLOSED:
+                    end_window.close()
+
+    # Quiz 1 Option
+    if start_event == 'Quiz 1':
         force_continue = False
 
         file = open("Quiz 1.txt", "r")
