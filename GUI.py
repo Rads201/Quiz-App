@@ -4,27 +4,131 @@ import zmq
 import random
 import json
 
-start_layout = [[sg.Text('Press a Button to Start the Quiz', font=("Comic Sans MS", 20))],
-                [sg.Button('Quiz 1', font=("Comic Sans MS", 20)), sg.Button('Math Quiz', font=("Comic Sans MS", 20))]]
+start_layout = [[sg.Text('Press a Button to Start a Quiz', font=("Comic Sans MS", 20))],
+                [sg.Button('Standard Quiz', font=("Comic Sans MS", 20)), sg.Button('Math Quiz', font=("Comic Sans MS", 20))],
+                [sg.Text('Press a Button to Create or Delete a Custom Quiz', font=("Comic Sans MS", 20))],
+                [sg.Button('Create Quiz', font=("Comic Sans MS", 20)), sg.Button('Delete Quiz',
+                                                                                 font=("Comic Sans MS", 20))]]
 
 start_layout1 = [[sg.VPush()],
                  [sg.Push(), sg.Column(start_layout, element_justification='c'), sg.Push()],
                  [sg.VPush()]]
 
 # Start Screen -----------------------------------------------------------------------
-window = sg.Window('Start Screen', start_layout1, size=(750, 450), resizable=True)
+window = sg.Window('Start Screen', start_layout1, size=(750, 500), resizable=True)
 
 while True:
     start_event, start_values = window.read()
     if start_event == sg.WINDOW_CLOSED:
         break
 
+    print(start_event)
+
+    # Create Quiz Option
+    if start_event == 'Create Quiz':
+
+        count = 0
+        questions = []
+        options = []
+        answers = []
+
+        create_layout = [[sg.Text('Enter your question, multiple choice options, and correct answer.',
+                                  font=("Comic Sans MS", 12))],
+                         [sg.Text('Question: ', font=("Comic Sans MS", 12)), sg.InputText(key='question')],
+                         [sg.Text('Option 1: ', font=("Comic Sans MS", 12)), sg.InputText(key='option1')],
+                         [sg.Text('Option 2: ', font=("Comic Sans MS", 12)), sg.InputText(key='option2')],
+                         [sg.Text('Option 3: ', font=("Comic Sans MS", 12)), sg.InputText(key='option3')],
+                         [sg.Text('Option 4: ', font=("Comic Sans MS", 12)), sg.InputText(key='option4')],
+                         [sg.Text('Which is the correct answer?', font=("Comic Sans MS", 12))],
+                         [sg.Radio('Option 1', 'Question_1', default=False, font=("Comic Sans MS", 12),
+                                   key='radio1')],
+                         [sg.Radio('Option 2', 'Question_1', default=False, font=("Comic Sans MS", 12),
+                                   key='radio2')],
+                         [sg.Radio('Option 3', 'Question_1', default=False, font=("Comic Sans MS", 12),
+                                   key='radio3')],
+                         [sg.Radio('Option 4', 'Question_1', default=False, font=("Comic Sans MS", 12),
+                                   key='radio4')]]
+
+        create_layout1 = [[sg.VPush()],
+                          [sg.Push(), sg.Column(create_layout, element_justification='c'), sg.Push()],
+                          [sg.VPush()], [sg.Push(), sg.Button('Next', font=("Comic Sans MS", 20), key='Next')]]
+
+        # Create Screen ------------------------------------------------------------------------------
+        create_window = sg.Window('Create Quiz', create_layout1, size=(750, 500), resizable=True)
+
+        while count < 5:
+
+            create_event, create_values = create_window.read()
+            if create_event == sg.WINDOW_CLOSED:
+                create_window.close()
+                break
+
+            questions.append(create_values['question'])
+            options.append([create_values['option1'], create_values['option2'], create_values['option3'],
+                            create_values['option4']])
+
+            if create_values['radio1'] is True:
+                answers.append(0)
+            elif create_values['radio2'] is True:
+                answers.append(1)
+            elif create_values['radio3'] is True:
+                answers.append(2)
+            elif create_values['radio4'] is True:
+                answers.append(3)
+
+            if create_event == 'Next':
+                count += 1
+                create_window['question'].update('')
+                create_window['option1'].update('')
+                create_window['option2'].update('')
+                create_window['option3'].update('')
+                create_window['option4'].update('')
+                create_window['radio1'].update(False)
+                create_window['radio2'].update(False)
+                create_window['radio3'].update(False)
+                create_window['radio4'].update(False)
+
+        file = open("Custom Quiz.txt", "w")
+
+        for line in range(5):
+            file.write(questions[line] + '\n')
+            file.write(options[line][0] + ', ' + options[line][1] + ', ' + options[line][2] + ', ' + options[line][3]
+                       + '\n')
+            if line != 4:
+                file.write(str(answers[line]) + '\n')
+            else:
+                file.write(str(answers[line]))
+
+        file.close()
+
+        # Close the Create Window
+        create_window.close()
+
+    # Delete Quiz Option
+    if start_event == 'Delete Quiz':
+
+        open('Custom Quiz.txt', 'w').close()
+
+        delete_layout = [[sg.Text('The Custom Quiz has been Deleted!', font=("Comic Sans MS", 20))],
+                         [sg.Button('Home', font=("Comic Sans MS", 20))]]
+
+        delete_layout1 = [[sg.VPush()],
+                          [sg.Push(), sg.Column(delete_layout, element_justification='c'), sg.Push()],
+                          [sg.VPush()]]
+
+        # Create Screen ------------------------------------------------------------------------------
+        delete_window = sg.Window('Create Quiz', delete_layout1, size=(750, 500), resizable=True)
+
+        delete_event, delete_values = delete_window.read()
+        if delete_event == 'Home' or delete_event == sg.WINDOW_CLOSED:
+            delete_window.close()
+
     # Math Quiz Option
     if start_event == 'Math Quiz':
         force_continue = False
         context = zmq.Context()
         socket = context.socket(zmq.REQ)
-        socket.connect("tcp://localhost:5555")
+        socket.connect("tcp://localhost:3000")
 
         random_num = random.randint(0, 2)
         categories = ["addition", "subtraction", "multiplication"]
@@ -51,7 +155,7 @@ while True:
                         sg.Button('Next', font=("Comic Sans MS", 20), key='Next')]]
 
         # Quiz Screen ------------------------------------------------------------------------------
-        window_math = sg.Window('Quiz App', layout_math, size=(750, 450), resizable=True)
+        window_math = sg.Window('Quiz App', layout_math, size=(750, 500), resizable=True)
 
         while len(problems) > count >= 0:
 
@@ -82,7 +186,7 @@ while True:
                                    [sg.VPush()]]
 
                 # Confirmation Screen ----------------------------------------------------------------------------
-                confirm_window = sg.Window('Confirmation', confirm_layout1, size=(750, 450))
+                confirm_window = sg.Window('Confirmation', confirm_layout1, size=(750, 500))
 
                 while True:
                     confirm_event, confirm_values = confirm_window.read()
@@ -114,7 +218,7 @@ while True:
                                [sg.Button('Home', font=("Comic Sans MS", 20))]]
 
                 # End Screen ----------------------------------------------------------------------------
-                end_window = sg.Window('End Screen', end_layout1, size=(750, 450), resizable=True)
+                end_window = sg.Window('End Screen', end_layout1, size=(750, 500), resizable=True)
 
                 end_event, end_values = end_window.read()
                 window_math.close()
@@ -122,11 +226,11 @@ while True:
                 if end_event == 'Home' or end_event == sg.WINDOW_CLOSED:
                     end_window.close()
 
-    # Quiz 1 Option
-    if start_event == 'Quiz 1':
+    # Default Quiz Option
+    if start_event == 'Standard Quiz' or start_event == 'Custom Quiz':
         force_continue = False
 
-        file = open("Quiz 1.txt", "r")
+        file = open("Standard Quiz.txt", "r")
         line_count = 0
         questions = []
         options = []
@@ -170,7 +274,7 @@ while True:
                      sg.Button('Next', font=("Comic Sans MS", 20), key='Next')]]
 
         # Quiz Screen ------------------------------------------------------------------------------
-        window_1 = sg.Window('Quiz App', layout_1, size=(750, 450), resizable=True)
+        window_1 = sg.Window('Quiz App', layout_1, size=(750, 500), resizable=True)
 
         while len(questions) > count >= 0:
 
@@ -216,7 +320,7 @@ while True:
                                    [sg.VPush()]]
 
                 # Confirmation Screen ----------------------------------------------------------------------------
-                confirm_window = sg.Window('Confirmation', confirm_layout1, size=(750, 450))
+                confirm_window = sg.Window('Confirmation', confirm_layout1, size=(750, 500))
 
                 while True:
                     confirm_event, confirm_values = confirm_window.read()
@@ -248,7 +352,7 @@ while True:
                                [sg.Button('Home', font=("Comic Sans MS", 20))]]
 
                 # End Screen ----------------------------------------------------------------------------
-                end_window = sg.Window('End Screen', end_layout1, size=(750, 450), resizable=True)
+                end_window = sg.Window('End Screen', end_layout1, size=(750, 500), resizable=True)
 
                 end_event, end_values = end_window.read()
                 window_1.close()
