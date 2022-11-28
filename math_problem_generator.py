@@ -6,7 +6,7 @@ import json
 
 context = zmq.Context()
 socket = context.socket(zmq.REP)
-socket.bind("tcp://*:5555")
+socket.bind("tcp://*:3000")
 
 
 while True:
