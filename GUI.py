@@ -5,7 +5,9 @@ import random
 import json
 
 start_layout = [[sg.Text('Press a Button to Start a Quiz', font=("Comic Sans MS", 20))],
-                [sg.Button('Standard Quiz', font=("Comic Sans MS", 20)), sg.Button('Math Quiz', font=("Comic Sans MS", 20))],
+                [sg.Button('Standard Quiz', font=("Comic Sans MS", 20)),
+                 sg.Button('Custom Quiz', font=("Comic Sans MS", 20)),
+                 sg.Button('Math Quiz', font=("Comic Sans MS", 20))],
                 [sg.Text('Press a Button to Create or Delete a Custom Quiz', font=("Comic Sans MS", 20))],
                 [sg.Button('Create Quiz', font=("Comic Sans MS", 20)), sg.Button('Delete Quiz',
                                                                                  font=("Comic Sans MS", 20))]]
@@ -230,7 +232,11 @@ while True:
     if start_event == 'Standard Quiz' or start_event == 'Custom Quiz':
         force_continue = False
 
-        file = open("Standard Quiz.txt", "r")
+        if start_event == 'Standard Quiz':
+            file = open("Standard Quiz.txt", "r")
+        else:
+            file = open("Custom Quiz.txt", "r")
+
         line_count = 0
         questions = []
         options = []
